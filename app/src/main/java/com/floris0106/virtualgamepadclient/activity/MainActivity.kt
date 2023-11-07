@@ -17,94 +17,98 @@ import java.net.InetAddress
 import java.time.Instant
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var ipEditText: EditText
-    private lateinit var connectButton: Button
-    private lateinit var editLayoutButton: Button
-    private lateinit var resetLayoutButton: Button
-    private lateinit var progressBar: ProgressBar
-    private lateinit var messageTextView: TextView
+	private lateinit var ipEditText: EditText
+	private lateinit var connectButton: Button
+	private lateinit var editLayoutButton: Button
+	private lateinit var resetLayoutButton: Button
+	private lateinit var progressBar: ProgressBar
+	private lateinit var messageTextView: TextView
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		setContentView(R.layout.activity_main)
 
-        ipEditText = findViewById(R.id.ipEditText)
-        connectButton = findViewById(R.id.connectButton)
-        editLayoutButton = findViewById(R.id.editLayoutButton)
-        resetLayoutButton = findViewById(R.id.resetLayoutButton)
-        progressBar = findViewById(R.id.progressBar)
-        messageTextView = findViewById(R.id.messageTextView)
+		ipEditText = findViewById(R.id.ipEditText)
+		connectButton = findViewById(R.id.connectButton)
+		editLayoutButton = findViewById(R.id.editLayoutButton)
+		resetLayoutButton = findViewById(R.id.resetLayoutButton)
+		progressBar = findViewById(R.id.progressBar)
+		messageTextView = findViewById(R.id.messageTextView)
 
-        connectButton.setOnClickListener {
-            val ip: InetAddress
-            try {
-                ip = Inet4Address.getByName(ipEditText.text.toString())
-            }
-            catch (e: Exception) {
-                setMessage("Invalid IP")
-                return@setOnClickListener
-            }
+		connectButton.setOnClickListener {
+			val ip: InetAddress
+			try {
+				ip = Inet4Address.getByName(ipEditText.text.toString())
+			}
+			catch (e: Exception) {
+				setMessage("Invalid IP")
+				return@setOnClickListener
+			}
 
-            setBusy(true)
+			setBusy(true)
 
-            Thread {
-                val connection = ServerConnection.create(ip)
+			Thread {
+				val connection = ServerConnection.create(ip)
 
-                val endTime = Instant.now().plusSeconds(10)
-                while (Instant.now().isBefore(endTime)) {
-                    if (connection.connected)
-                        break
-                    Thread.sleep(100)
-                }
+				val endTime = Instant.now().plusSeconds(5)
+				while (Instant.now().isBefore(endTime)) {
+					if (connection.connected)
+						break
+					Thread.sleep(100)
+				}
 
-                Handler(mainLooper).post {
-                    setBusy(false)
-                    if (!connection.connected) {
-                        setMessage("Failed to connect")
-                        connection.close()
-                        return@post
-                    }
-                    startActivity(Intent(this, GamepadActivity::class.java))
-                }
-            }.start()
-        }
+				if (!connection.connected)
+					connection.close()
 
-        editLayoutButton.setOnClickListener {
-            startActivity(Intent(this, LayoutActivity::class.java))
-        }
+				Handler(mainLooper).post {
+					setBusy(false)
+					if (!connection.connected) {
+						setMessage("Failed to connect")
+						connection.close()
+						return@post
+					}
+					startActivity(Intent(this, GamepadActivity::class.java))
+				}
+			}.start()
+		}
 
-        resetLayoutButton.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setMessage("Are you sure you want to reset the layout?")
-                .setPositiveButton("No") { _, _ -> }
-                .setNegativeButton("Yes (default)") { _, _ ->
-                    GamepadView.layout = GamepadView.Layout()
-                }
-                .setNeutralButton("Yes (alternative)") { _, _ ->
-                    GamepadView.layout = GamepadView.Layout.getAlternativeLayout()
-                }
-                .create().show()
-        }
+		editLayoutButton.setOnClickListener {
+			startActivity(Intent(this, LayoutActivity::class.java))
+		}
 
-        setMessage(message)
+		resetLayoutButton.setOnClickListener {
+			AlertDialog.Builder(this)
+				.setMessage("Are you sure you want to reset the layout?")
+				.setPositiveButton("No") { _, _ -> }
+				.setNegativeButton("Yes (default)") { _, _ ->
+					GamepadView.layout = GamepadView.Layout()
+				}
+				.setNeutralButton("Yes (alternative)") { _, _ ->
+					GamepadView.layout = GamepadView.Layout.getAlternativeLayout()
+				}
+				.create().show()
+		}
 
-        GamepadView.loadLayout(this)
-    }
+		setMessage(message)
 
-    private fun setBusy(busy: Boolean) {
-        ipEditText.isEnabled = !busy
-        connectButton.isEnabled = !busy
-        editLayoutButton.isEnabled = !busy
-        progressBar.visibility = if (busy) ProgressBar.VISIBLE else ProgressBar.INVISIBLE
-        if (busy)
-            messageTextView.text = ""
-    }
+		GamepadView.loadLayout(this)
+	}
 
-    private fun setMessage(message: String) {
-        messageTextView.text = message
-    }
+	private fun setBusy(busy: Boolean) {
+		ipEditText.isEnabled = !busy
+		connectButton.isEnabled = !busy
+		editLayoutButton.isEnabled = !busy
+		resetLayoutButton.isEnabled = !busy
+		progressBar.visibility = if (busy) ProgressBar.VISIBLE else ProgressBar.INVISIBLE
+		if (busy)
+			messageTextView.text = ""
+	}
 
-    companion object {
-        var message = ""
-    }
+	private fun setMessage(message: String) {
+		messageTextView.text = message
+	}
+
+	companion object {
+		var message = ""
+	}
 }

@@ -2,41 +2,46 @@ package com.floris0106.virtualgamepadclient.net
 
 import com.floris0106.virtualgamepadclient.view.GamepadView
 import java.nio.ByteBuffer
+import java.time.Instant
 
-class GamepadStatePacket(val state: GamepadView.GamepadState) : ServerboundPacket() {
-    override val id: UByte = 0x01u
+class GamepadStatePacket(private val state: GamepadView.GamepadState) : ServerboundPacket() {
+	override val id: UByte = 0x01u
 
-    override fun getSize(): Int {
-        return Short.SIZE_BYTES + Float.SIZE_BYTES * 4
-    }
+	private val timestamp = Instant.now()
 
-    override fun encode(buffer: ByteBuffer) {
-        val buttons = listOf(
-            state.a,
-            state.b,
-            state.x,
-            state.y,
-            state.dpadUp,
-            state.dpadDown,
-            state.dpadLeft,
-            state.dpadRight,
-            state.l,
-            state.zl,
-            state.r,
-            state.zr,
-            state.minus,
-            state.plus
-        )
+	override fun getSize(): Int {
+		return Short.SIZE_BYTES + Float.SIZE_BYTES * 4 + Long.SIZE_BYTES
+	}
 
-        var buttonStates = 0
-        for (i in buttons.indices)
-            if (buttons[i])
-                buttonStates = buttonStates or (1 shl i)
+	override fun encode(buffer: ByteBuffer) {
+		val buttons = listOf(
+			state.a,
+			state.b,
+			state.x,
+			state.y,
+			state.dpadUp,
+			state.dpadDown,
+			state.dpadLeft,
+			state.dpadRight,
+			state.l,
+			state.zl,
+			state.r,
+			state.zr,
+			state.minus,
+			state.plus
+		)
 
-        buffer.putShort(buttonStates.toShort())
-        buffer.putFloat(state.leftStick.x)
-        buffer.putFloat(state.leftStick.y)
-        buffer.putFloat(state.rightStick.x)
-        buffer.putFloat(state.rightStick.y)
-    }
+		var buttonStates = 0
+		for (i in buttons.indices)
+			if (buttons[i])
+				buttonStates = buttonStates or (1 shl i)
+
+		buffer.putShort(buttonStates.toShort())
+		buffer.putFloat(state.leftStick.x)
+		buffer.putFloat(state.leftStick.y)
+		buffer.putFloat(state.rightStick.x)
+		buffer.putFloat(state.rightStick.y)
+
+		buffer.putLong(timestamp.toEpochMilli())
+	}
 }
